@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>顏色學習遊戲 🎨</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+    background: #f5f0ff;
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 1rem;
+  }
+
+  #container {
+    background: #fff;
+    border-radius: 24px;
+    width: 100%;
+    max-width: 420px;
+    padding: 1.5rem 1.2rem;
+    box-shadow: 0 4px 24px rgba(127,119,221,0.13);
+    min-height: 560px;
+  }
+
+  h1 {
+    text-align: center;
+    font-size: 20px;
+    font-weight: 600;
+    color: #534AB7;
+    margin-bottom: 1.2rem;
+    letter-spacing: 1px;
+  }
+
+  #score-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.8rem;
+  }
+  #prog { font-size: 14px; color: #888; }
+  #score-disp { font-size: 15px; font-weight: 600; color: #534AB7; }
+
+  #timer-wrap { margin-bottom: 1.2rem; }
+  #timer-track {
+    height: 10px;
+    background: #ede9ff;
+    border-radius: 99px;
+    overflow: hidden;
+  }
+  #timer-bar {
+    height: 100%;
+    width: 100%;
+    background: #7F77DD;
+    border-radius: 99px;
+    transition: width 0.1s linear, background 0.3s;
+  }
+
+  #listen-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    padding: 16px;
+    border-radius: 20px;
+    border: none;
+    cursor: pointer;
+    background: #7F77DD;
+    color: #fff;
+    font-size: 20px;
+    font-weight: 600;
+    transition: transform 0.1s, background 0.2s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  #listen-btn:active { transform: scale(0.97); background: #534AB7; }
+  #listen-btn.pulse { animation: pulse 0.55s ease-out; }
+  @keyframes pulse {
+    0% { transform: scale(1); }
+    40% { transform: scale(1.04); }
+    100% { transform: scale(1); }
+  }
+
+  #color-word {
+    font-size: 38px;
+    font-weight: 700;
+    color: #3C3489;
+    text-align: center;
+    margin: 1rem 0 1.2rem;
+    letter-spacing: 3px;
+    min-height: 52px;
+  }
+
+  #choices {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+
+  .cbtn {
+    border-radius: 22px;
+    border: 3px solid transparent;
+    height: 130px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    padding-bottom: 12px;
+    transition: transform 0.12s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .cbtn:active { transform: scale(0.95); }
+  .cbtn span {
+    font-size: 14px;
+    font-weight: 600;
+    background: rgba(255,255,255,0.78);
+    border-radius: 10px;
+    padding: 4px 12px;
+    color: rgba(0,0,0,0.6);
+  }
+  .cbtn.correct {
+    border-color: #1D9E75;
+    animation: bounce 0.45s;
+  }
+  .cbtn.wrong {
+    border-color: #E24B4A;
+    animation: shake 0.4s;
+  }
+  .cbtn.reveal { border-color: #1D9E75; }
+
+  @keyframes bounce {
+    0%,100% { transform: scale(1); }
+    50% { transform: scale(1.08); }
+  }
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    25% { transform: translateX(-8px); }
+    75% { transform: translateX(8px); }
+  }
+
+  #feedback {
+    text-align: center;
+    font-size: 22px;
+    font-weight: 600;
+    min-height: 44px;
+    margin-top: 1rem;
+    line-height: 44px;
+  }
+  #feedback.good { color: #1D9E75; }
+  #feedback.bad  { color: #E24B4A; }
+  #feedback.timeout { color: #BA7517; }
+
+  #game-screen { display: block; }
+
+  #end-screen {
+    display: none;
+    text-align: center;
+    padding: 2rem 1rem;
+  }
+  #end-screen .big { font-size: 64px; margin-bottom: 0.8rem; }
+  #end-screen h2 {
+    font-size: 26px;
+    font-weight: 700;
+    color: #3C3489;
+    margin-bottom: 0.5rem;
+  }
+  #end-screen p { font-size: 16px; color: #888; margin-bottom: 1.8rem; }
+  #restart-btn {
+    background: #7F77DD;
+    color: #fff;
+    border: none;
+    border-radius: 50px;
+    padding: 15px 40px;
+    font-size: 18px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.1s;
+  }
+  #restart-btn:active { transform: scale(0.97); }
+</style>
+</head>
+<body>
+<div id="container">
+  <h1>🎨 顏色學習遊戲</h1>
+
+  <div id="game-screen">
+    <div id="score-bar">
+      <span id="prog">1 / 8</span>
+      <span id="score-disp">0 分</span>
+    </div>
+    <div id="timer-wrap">
+      <div id="timer-track"><div id="timer-bar"></div></div>
+    </div>
+    <button id="listen-btn" onclick="speakNow()">
+      <span style="font-size:26px">🔊</span> 點我聽聲音！
+    </button>
+    <div id="color-word"></div>
+    <div id="choices"></div>
+    <div id="feedback"></div>
+  </div>
+
+  <div id="end-screen">
+    <div class="big" id="end-icon">🎉</div>
+    <h2 id="end-title"></h2>
+    <p id="end-msg"></p>
+    <button id="restart-btn" onclick="startGame()">再玩一次！</button>
+  </div>
+</div>
+
+<script>
+const COLORS = [
+  { en: 'red',    zh: '紅色', hex: '#E24B4A' },
+  { en: 'blue',   zh: '藍色', hex: '#378ADD' },
+  { en: 'green',  zh: '綠色', hex: '#639922' },
+  { en: 'yellow', zh: '黃色', hex: '#EF9F27' },
+  { en: 'orange', zh: '橘色', hex: '#D85A30' },
+  { en: 'purple', zh: '紫色', hex: '#7F77DD' },
+  { en: 'pink',   zh: '粉紅', hex: '#D4537E' },
+  { en: 'white',  zh: '白色', hex: '#f0ede8', border: true },
+  { en: 'black',  zh: '黑色', hex: '#2C2C2A' },
+  { en: 'brown',  zh: '棕色', hex: '#7a4f2e' },
+];
+
+const TOTAL_TIME = 8000;
+let queue = [], current = 0, score = 0, answered = false;
+let timerInterval = null, timerStart = null;
+let voices = [];
+
+function loadVoices() {
+  voices = speechSynthesis.getVoices();
+  if (!voices.length) setTimeout(loadVoices, 200);
+}
+window.speechSynthesis.onvoiceschanged = loadVoices;
+loadVoices();
+
+function getBestVoice() {
+  const prefs = ['Samantha', 'Google US English', 'en-US', 'en_US', 'en-GB', 'en'];
+  for (let p of prefs) {
+    let v = voices.find(x => x.name === p || x.voiceURI === p || (x.lang && x.lang.startsWith(p)));
+    if (v) return v;
+  }
+  return voices.find(v => v.lang && v.lang.startsWith('en')) || null;
+}
+
+function speak(text, rate, pitch, cb) {
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'en-US';
+  u.rate = rate || 0.82;
+  u.pitch = pitch || 1.15;
+  u.volume = 1;
+  const v = getBestVoice();
+  if (v) u.voice = v;
+  if (cb) u.onend = cb;
+  speechSynthesis.speak(u);
+}
+
+function shuffle(a) { return [...a].sort(() => Math.random() - 0.5); }
+
+function startTimer() {
+  clearInterval(timerInterval);
+  timerStart = Date.now();
+  const bar = document.getElementById('timer-bar');
+  bar.style.width = '100%';
+  bar.style.background = '#7F77DD';
+  timerInterval = setInterval(() => {
+    if (answered) return;
+    const elapsed = Date.now() - timerStart;
+    const pct = Math.max(0, 100 - (elapsed / TOTAL_TIME * 100));
+    bar.style.width = pct + '%';
+    if (pct < 30) bar.style.background = '#E24B4A';
+    else if (pct < 60) bar.style.background = '#EF9F27';
+    else bar.style.background = '#7F77DD';
+    if (elapsed >= TOTAL_TIME) handleTimeout();
+  }, 80);
+}
+
+function stopTimer() { clearInterval(timerInterval); }
+
+function handleTimeout() {
+  if (answered) return;
+  answered = true;
+  stopTimer();
+  const fb = document.getElementById('feedback');
+  fb.textContent = '⏰ 時間到！';
+  fb.className = 'timeout';
+  document.querySelectorAll('.cbtn').forEach(b => {
+    if (b.dataset.correct === '1') b.classList.add('reveal');
+  });
+  speak('Time is up! The answer is ' + queue[current].en, 0.8, 1.1, () => setTimeout(nextQuestion, 1000));
+}
+
+function speakNow() {
+  const btn = document.getElementById('listen-btn');
+  btn.classList.remove('pulse');
+  void btn.offsetWidth;
+  btn.classList.add('pulse');
+  const word = queue[current].en;
+  document.getElementById('color-word').textContent = word.toUpperCase();
+  speak(word, 0.82, 1.15);
+}
+
+function buildChoices(target) {
+  const others = shuffle(COLORS.filter(c => c.en !== target.en)).slice(0, 1);
+  const opts = shuffle([target, ...others]);
+  const div = document.getElementById('choices');
+  div.innerHTML = '';
+  opts.forEach(c => {
+    const b = document.createElement('button');
+    b.className = 'cbtn';
+    b.dataset.correct = (c.en === target.en) ? '1' : '0';
+    b.style.background = c.hex;
+    if (c.border) b.style.outline = '2px solid #ccc';
+    b.innerHTML = `<span>${c.zh}</span>`;
+    b.onclick = () => handleAnswer(c.en === target.en, b);
+    div.appendChild(b);
+  });
+}
+
+function handleAnswer(correct, btn) {
+  if (answered) return;
+  answered = true;
+  stopTimer();
+  const fb = document.getElementById('feedback');
+  if (correct) {
+    btn.classList.add('correct');
+    fb.textContent = '🎉 答對了！好棒！';
+    fb.className = 'good';
+    score++;
+    speak('Correct! Great job!', 0.88, 1.2, () => setTimeout(nextQuestion, 900));
+  } else {
+    btn.classList.add('wrong');
+    document.querySelectorAll('.cbtn').forEach(b => {
+      if (b.dataset.correct === '1') b.classList.add('reveal');
+    });
+    fb.textContent = '加油！下次一定可以！';
+    fb.className = 'bad';
+    speak('Try again next time!', 0.88, 1.1, () => setTimeout(nextQuestion, 1100));
+  }
+  document.getElementById('score-disp').textContent = score + ' 分';
+}
+
+function nextQuestion() {
+  current++;
+  if (current >= queue.length) { showEnd(); return; }
+  loadQuestion();
+}
+
+function loadQuestion() {
+  answered = false;
+  document.getElementById('feedback').textContent = '';
+  document.getElementById('color-word').textContent = '';
+  document.getElementById('prog').textContent = (current + 1) + ' / ' + queue.length;
+  document.getElementById('listen-btn').innerHTML = '<span style="font-size:26px">🔊</span> 點我聽聲音！';
+  buildChoices(queue[current]);
+  document.getElementById('timer-bar').style.width = '100%';
+  setTimeout(() => { speakNow(); startTimer(); }, 350);
+}
+
+function showEnd() {
+  document.getElementById('game-screen').style.display = 'none';
+  document.getElementById('end-screen').style.display = 'block';
+  const total = queue.length;
+  const icon = score === total ? '🌟' : score >= total * 0.75 ? '🎉' : score >= total * 0.5 ? '😊' : '💪';
+  const title = score === total ? '全部答對！超厲害！' : score >= total * 0.75 ? '做得很好！' : score >= total * 0.5 ? '不錯喔！繼續加油！' : '多練習就會更棒！';
+  document.getElementById('end-icon').textContent = icon;
+  document.getElementById('end-title').textContent = title;
+  document.getElementById('end-msg').textContent = total + ' 題裡答對了 ' + score + ' 題！';
+  speak('Excellent! You finished the game!', 0.88, 1.15);
+}
+
+function startGame() {
+  queue = shuffle(COLORS).slice(0, 8);
+  current = 0; score = 0; answered = false;
+  document.getElementById('game-screen').style.display = 'block';
+  document.getElementById('end-screen').style.display = 'none';
+  document.getElementById('score-disp').textContent = '0 分';
+  loadQuestion();
+}
+
+startGame();
+</script>
+</body>
+</html>
