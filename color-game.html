@@ -1,389 +1,468 @@
-<!DOCTYPE html>
-<html lang="zh-TW">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>顏色學習遊戲 🎨</title>
+
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-serif;}
+#app{padding:1.2rem 1rem;min-height:600px;}
+#top-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:0.8rem;}
+#level-badge{font-size:13px;font-weight:600;color:#534AB7;background:#EEEDFE;border-radius:99px;padding:4px 14px;}
+#skip-btn{font-size:12px;font-weight:500;color:#888;background:transparent;border:1px solid #ccc;border-radius:99px;padding:4px 12px;cursor:pointer;}
+#score-bar{display:flex;justify-content:space-between;margin-bottom:0.7rem;}
+#prog{font-size:13px;color:#888;}
+#score-disp{font-size:15px;font-weight:600;color:#534AB7;}
+#timer-track{height:10px;background:#ede9ff;border-radius:99px;overflow:hidden;margin-bottom:1rem;}
+#timer-bar{height:100%;width:100%;background:#7F77DD;border-radius:99px;transition:width 0.1s linear,background 0.3s;}
+#listen-btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:14px;border-radius:20px;border:none;cursor:pointer;background:#7F77DD;color:#fff;font-size:18px;font-weight:600;transition:transform 0.1s;}
+#listen-btn:active{transform:scale(0.97);}
+#listen-btn.pulse{animation:lpulse 0.55s ease-out;}
+@keyframes lpulse{0%{transform:scale(1)}40%{transform:scale(1.04)}100%{transform:scale(1)}}
+#color-word{font-size:26px;font-weight:700;color:#3C3489;text-align:center;margin:0.8rem 0;letter-spacing:2px;min-height:40px;line-height:1.3;}
+#hint{font-size:13px;text-align:center;color:#888;margin-bottom:0.7rem;min-height:18px;}
+#choices{display:grid;gap:10px;margin-bottom:0.5rem;}
+.cbtn{border-radius:18px;border:3px solid transparent;height:95px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:10px;transition:transform 0.12s;}
+.cbtn:active{transform:scale(0.95);}
+.cbtn span{font-size:13px;font-weight:600;background:rgba(255,255,255,0.78);border-radius:8px;padding:3px 10px;color:rgba(0,0,0,0.6);}
+.cbtn.selected{border-color:#534AB7;transform:scale(1.03);}
+.cbtn.correct{border-color:#1D9E75;animation:cbounce 0.45s;}
+.cbtn.wrong{border-color:#E24B4A;animation:cshake 0.4s;}
+.cbtn.reveal{border-color:#1D9E75;}
+.cbtn.missed{border-color:#BA7517;}
+@keyframes cbounce{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+@keyframes cshake{0%,100%{transform:translateX(0)}25%{transform:translateX(-7px)}75%{transform:translateX(7px)}}
+#feedback{text-align:center;font-size:18px;font-weight:600;min-height:36px;margin-top:0.5rem;line-height:36px;}
+#feedback.good{color:#1D9E75;}#feedback.bad{color:#E24B4A;}#feedback.timeout{color:#BA7517;}#feedback.skip{color:#888;}
+#confirm-btn{display:none;width:100%;margin-top:10px;padding:12px;border-radius:16px;border:none;cursor:pointer;background:#1D9E75;color:#fff;font-size:17px;font-weight:600;}
 
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
-    background: #f5f0ff;
-    min-height: 100vh;
-    display: flex;
-    align-items: flex-start;
-    justify-content: center;
-    padding: 1rem;
-  }
+/* Level result overlay */
+#result-screen{display:none;text-align:center;padding:1.5rem 1rem;}
+#animal-wrap{position:relative;height:160px;display:flex;align-items:center;justify-content:center;margin-bottom:0.5rem;}
+#animal-svg{width:130px;height:130px;}
+.clap-hand{transform-origin:50% 100%;animation:clap 0.4s ease-in-out infinite alternate;}
+@keyframes clap{0%{transform:rotate(-20deg)}100%{transform:rotate(20deg)}}
+.sad-tear{animation:tear 1.5s ease-in infinite;}
+@keyframes tear{0%{cy:82;opacity:1}100%{cy:105;opacity:0}}
+.bounce-body{animation:bodybounce 0.5s ease-in-out infinite alternate;}
+@keyframes bodybounce{0%{transform:translateY(0)}100%{transform:translateY(-8px)}}
+#result-msg{font-size:22px;font-weight:700;color:#3C3489;margin-bottom:0.3rem;}
+#result-sub{font-size:15px;color:#888;margin-bottom:1.2rem;}
+#result-btns{display:flex;gap:12px;justify-content:center;}
+.rbtn{padding:12px 22px;border-radius:50px;border:none;font-size:16px;font-weight:600;cursor:pointer;}
+#retry-btn{background:#f0ede8;color:#534AB7;}
+#next-lv-btn{background:#7F77DD;color:#fff;}
 
-  #container {
-    background: #fff;
-    border-radius: 24px;
-    width: 100%;
-    max-width: 420px;
-    padding: 1.5rem 1.2rem;
-    box-shadow: 0 4px 24px rgba(127,119,221,0.13);
-    min-height: 560px;
-  }
-
-  h1 {
-    text-align: center;
-    font-size: 20px;
-    font-weight: 600;
-    color: #534AB7;
-    margin-bottom: 1.2rem;
-    letter-spacing: 1px;
-  }
-
-  #score-bar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 0.8rem;
-  }
-  #prog { font-size: 14px; color: #888; }
-  #score-disp { font-size: 15px; font-weight: 600; color: #534AB7; }
-
-  #timer-wrap { margin-bottom: 1.2rem; }
-  #timer-track {
-    height: 10px;
-    background: #ede9ff;
-    border-radius: 99px;
-    overflow: hidden;
-  }
-  #timer-bar {
-    height: 100%;
-    width: 100%;
-    background: #7F77DD;
-    border-radius: 99px;
-    transition: width 0.1s linear, background 0.3s;
-  }
-
-  #listen-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    width: 100%;
-    padding: 16px;
-    border-radius: 20px;
-    border: none;
-    cursor: pointer;
-    background: #7F77DD;
-    color: #fff;
-    font-size: 20px;
-    font-weight: 600;
-    transition: transform 0.1s, background 0.2s;
-    -webkit-tap-highlight-color: transparent;
-  }
-  #listen-btn:active { transform: scale(0.97); background: #534AB7; }
-  #listen-btn.pulse { animation: pulse 0.55s ease-out; }
-  @keyframes pulse {
-    0% { transform: scale(1); }
-    40% { transform: scale(1.04); }
-    100% { transform: scale(1); }
-  }
-
-  #color-word {
-    font-size: 38px;
-    font-weight: 700;
-    color: #3C3489;
-    text-align: center;
-    margin: 1rem 0 1.2rem;
-    letter-spacing: 3px;
-    min-height: 52px;
-  }
-
-  #choices {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 14px;
-  }
-
-  .cbtn {
-    border-radius: 22px;
-    border: 3px solid transparent;
-    height: 130px;
-    cursor: pointer;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-end;
-    padding-bottom: 12px;
-    transition: transform 0.12s;
-    -webkit-tap-highlight-color: transparent;
-  }
-  .cbtn:active { transform: scale(0.95); }
-  .cbtn span {
-    font-size: 14px;
-    font-weight: 600;
-    background: rgba(255,255,255,0.78);
-    border-radius: 10px;
-    padding: 4px 12px;
-    color: rgba(0,0,0,0.6);
-  }
-  .cbtn.correct {
-    border-color: #1D9E75;
-    animation: bounce 0.45s;
-  }
-  .cbtn.wrong {
-    border-color: #E24B4A;
-    animation: shake 0.4s;
-  }
-  .cbtn.reveal { border-color: #1D9E75; }
-
-  @keyframes bounce {
-    0%,100% { transform: scale(1); }
-    50% { transform: scale(1.08); }
-  }
-  @keyframes shake {
-    0%,100% { transform: translateX(0); }
-    25% { transform: translateX(-8px); }
-    75% { transform: translateX(8px); }
-  }
-
-  #feedback {
-    text-align: center;
-    font-size: 22px;
-    font-weight: 600;
-    min-height: 44px;
-    margin-top: 1rem;
-    line-height: 44px;
-  }
-  #feedback.good { color: #1D9E75; }
-  #feedback.bad  { color: #E24B4A; }
-  #feedback.timeout { color: #BA7517; }
-
-  #game-screen { display: block; }
-
-  #end-screen {
-    display: none;
-    text-align: center;
-    padding: 2rem 1rem;
-  }
-  #end-screen .big { font-size: 64px; margin-bottom: 0.8rem; }
-  #end-screen h2 {
-    font-size: 26px;
-    font-weight: 700;
-    color: #3C3489;
-    margin-bottom: 0.5rem;
-  }
-  #end-screen p { font-size: 16px; color: #888; margin-bottom: 1.8rem; }
-  #restart-btn {
-    background: #7F77DD;
-    color: #fff;
-    border: none;
-    border-radius: 50px;
-    padding: 15px 40px;
-    font-size: 18px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: transform 0.1s;
-  }
-  #restart-btn:active { transform: scale(0.97); }
+/* Final screen */
+#final-screen{display:none;text-align:center;padding:1rem;}
+#fireworks-canvas{width:100%;height:220px;border-radius:16px;background:#1a1040;margin-bottom:1rem;}
+#final-title{font-size:24px;font-weight:700;color:#3C3489;margin-bottom:0.5rem;}
+#score-table{width:100%;border-collapse:collapse;margin-bottom:1.2rem;font-size:14px;}
+#score-table th{background:#EEEDFE;color:#534AB7;padding:7px 10px;}
+#score-table td{padding:7px 10px;border-bottom:0.5px solid #ede9ff;color:#444;}
+#score-table tr:last-child td{font-weight:700;color:#534AB7;}
+#play-again-btn{background:#7F77DD;color:#fff;border:none;border-radius:50px;padding:14px 36px;font-size:18px;font-weight:600;cursor:pointer;}
 </style>
-</head>
-<body>
-<div id="container">
-  <h1>🎨 顏色學習遊戲</h1>
 
-  <div id="game-screen">
-    <div id="score-bar">
-      <span id="prog">1 / 8</span>
-      <span id="score-disp">0 分</span>
-    </div>
-    <div id="timer-wrap">
-      <div id="timer-track"><div id="timer-bar"></div></div>
-    </div>
-    <button id="listen-btn" onclick="speakNow()">
-      <span style="font-size:26px">🔊</span> 點我聽聲音！
-    </button>
-    <div id="color-word"></div>
-    <div id="choices"></div>
-    <div id="feedback"></div>
+<div id="app">
+  <div id="top-bar">
+    <span id="level-badge">第 1 關</span>
+    <button id="skip-btn" onclick="skipLevel()">跳下一關 ▶</button>
   </div>
+  <div id="score-bar">
+    <span id="prog">1 / 6</span>
+    <span id="score-disp">0 分</span>
+  </div>
+  <div id="timer-track"><div id="timer-bar"></div></div>
+  <button id="listen-btn" onclick="speakNow()"><span style="font-size:24px">🔊</span> 點我聽聲音！</button>
+  <div id="color-word"></div>
+  <div id="hint"></div>
+  <div id="choices"></div>
+  <button id="confirm-btn" onclick="confirmMulti()">✔ 確認答案</button>
+  <div id="feedback"></div>
+</div>
 
-  <div id="end-screen">
-    <div class="big" id="end-icon">🎉</div>
-    <h2 id="end-title"></h2>
-    <p id="end-msg"></p>
-    <button id="restart-btn" onclick="startGame()">再玩一次！</button>
+<div id="result-screen">
+  <div id="animal-wrap"><svg id="animal-svg" viewBox="0 0 130 130"></svg></div>
+  <div id="result-msg"></div>
+  <div id="result-sub"></div>
+  <div id="result-btns">
+    <button class="rbtn" id="retry-btn" onclick="retryLevel()">🔁 再挑戰一次</button>
+    <button class="rbtn" id="next-lv-btn" onclick="goNextLevel()">下一關 ▶</button>
   </div>
 </div>
 
+<div id="final-screen">
+  <canvas id="fireworks-canvas"></canvas>
+  <div id="final-title">🎆 恭喜完成所有關卡！</div>
+  <table id="score-table">
+    <thead><tr><th>關卡</th><th>答對題數</th><th>總題數</th></tr></thead>
+    <tbody id="score-tbody"></tbody>
+  </table>
+  <button id="play-again-btn" onclick="startGame()">🔄 再玩一次</button>
+</div>
+
 <script>
-const COLORS = [
-  { en: 'red',    zh: '紅色', hex: '#E24B4A' },
-  { en: 'blue',   zh: '藍色', hex: '#378ADD' },
-  { en: 'green',  zh: '綠色', hex: '#639922' },
-  { en: 'yellow', zh: '黃色', hex: '#EF9F27' },
-  { en: 'orange', zh: '橘色', hex: '#D85A30' },
-  { en: 'purple', zh: '紫色', hex: '#7F77DD' },
-  { en: 'pink',   zh: '粉紅', hex: '#D4537E' },
-  { en: 'white',  zh: '白色', hex: '#f0ede8', border: true },
-  { en: 'black',  zh: '黑色', hex: '#2C2C2A' },
-  { en: 'brown',  zh: '棕色', hex: '#7a4f2e' },
+const COLORS=[
+  {en:'red',zh:'紅色',hex:'#E24B4A'},
+  {en:'blue',zh:'藍色',hex:'#378ADD'},
+  {en:'green',zh:'綠色',hex:'#639922'},
+  {en:'yellow',zh:'黃色',hex:'#EF9F27'},
+  {en:'orange',zh:'橘色',hex:'#D85A30'},
+  {en:'purple',zh:'紫色',hex:'#7F77DD'},
+  {en:'pink',zh:'粉紅',hex:'#D4537E'},
+  {en:'white',zh:'白色',hex:'#f0ede8',border:true},
+  {en:'black',zh:'黑色',hex:'#2C2C2A'},
+  {en:'brown',zh:'棕色',hex:'#7a4f2e'},
 ];
+const LEVELS=[
+  {lv:1,choices:2,pick:1,time:8000,qs:6},
+  {lv:2,choices:4,pick:1,time:7000,qs:6},
+  {lv:3,choices:6,pick:1,time:6000,qs:6},
+  {lv:4,choices:4,pick:2,time:8000,qs:5},
+  {lv:5,choices:6,pick:2,time:8000,qs:5},
+  {lv:6,choices:6,pick:3,time:12000,qs:5},
+];
+const ANIMALS=['🐶','🐱','🐻','🦊','🐸','🐼'];
 
-const TOTAL_TIME = 8000;
-let queue = [], current = 0, score = 0, answered = false;
-let timerInterval = null, timerStart = null;
-let voices = [];
+let currentLevel=0,qIndex=0,totalScore=0;
+let levelScore=0,levelScores=[];
+let answered=false,timerInterval=null;
+let selectedBtns=[],targetColors=[];
+let voices=[];
+let fwInterval=null;
 
-function loadVoices() {
-  voices = speechSynthesis.getVoices();
-  if (!voices.length) setTimeout(loadVoices, 200);
+function loadVoices(){voices=speechSynthesis.getVoices();if(!voices.length)setTimeout(loadVoices,200);}
+window.speechSynthesis.onvoiceschanged=loadVoices;loadVoices();
+function getBestVoice(){
+  const prefs=['Samantha','Google US English','en-US','en_US','en-GB'];
+  for(let p of prefs){let v=voices.find(x=>x.name===p||x.voiceURI===p||(x.lang&&x.lang.startsWith(p)));if(v)return v;}
+  return voices.find(v=>v.lang&&v.lang.startsWith('en'))||null;
 }
-window.speechSynthesis.onvoiceschanged = loadVoices;
-loadVoices();
-
-function getBestVoice() {
-  const prefs = ['Samantha', 'Google US English', 'en-US', 'en_US', 'en-GB', 'en'];
-  for (let p of prefs) {
-    let v = voices.find(x => x.name === p || x.voiceURI === p || (x.lang && x.lang.startsWith(p)));
-    if (v) return v;
-  }
-  return voices.find(v => v.lang && v.lang.startsWith('en')) || null;
-}
-
-function speak(text, rate, pitch, cb) {
+function speak(text,rate,pitch,cb){
   speechSynthesis.cancel();
-  const u = new SpeechSynthesisUtterance(text);
-  u.lang = 'en-US';
-  u.rate = rate || 0.82;
-  u.pitch = pitch || 1.15;
-  u.volume = 1;
-  const v = getBestVoice();
-  if (v) u.voice = v;
-  if (cb) u.onend = cb;
+  const u=new SpeechSynthesisUtterance(text);
+  u.lang='en-US';u.rate=rate||0.82;u.pitch=pitch||1.15;u.volume=1;
+  const v=getBestVoice();if(v)u.voice=v;
+  if(cb)u.onend=cb;
   speechSynthesis.speak(u);
 }
+function speakColors(colors,cb){
+  if(colors.length===1){speak(colors[0].en,0.82,1.15,cb);return;}
+  speak(colors.map(c=>c.en).join(' and '),0.78,1.1,cb);
+}
+function shuffle(a){return[...a].sort(()=>Math.random()-0.5);}
 
-function shuffle(a) { return [...a].sort(() => Math.random() - 0.5); }
-
-function startTimer() {
+function startTimer(ms){
   clearInterval(timerInterval);
-  timerStart = Date.now();
-  const bar = document.getElementById('timer-bar');
-  bar.style.width = '100%';
-  bar.style.background = '#7F77DD';
-  timerInterval = setInterval(() => {
-    if (answered) return;
-    const elapsed = Date.now() - timerStart;
-    const pct = Math.max(0, 100 - (elapsed / TOTAL_TIME * 100));
-    bar.style.width = pct + '%';
-    if (pct < 30) bar.style.background = '#E24B4A';
-    else if (pct < 60) bar.style.background = '#EF9F27';
-    else bar.style.background = '#7F77DD';
-    if (elapsed >= TOTAL_TIME) handleTimeout();
-  }, 80);
+  const bar=document.getElementById('timer-bar');
+  bar.style.width='100%';bar.style.background='#7F77DD';
+  const start=Date.now();
+  timerInterval=setInterval(()=>{
+    if(answered)return;
+    const e=Date.now()-start;
+    const pct=Math.max(0,100-(e/ms*100));
+    bar.style.width=pct+'%';
+    if(pct<25)bar.style.background='#E24B4A';
+    else if(pct<55)bar.style.background='#EF9F27';
+    else bar.style.background='#7F77DD';
+    if(e>=ms)handleTimeout();
+  },80);
 }
+function stopTimer(){clearInterval(timerInterval);}
 
-function stopTimer() { clearInterval(timerInterval); }
-
-function handleTimeout() {
-  if (answered) return;
-  answered = true;
-  stopTimer();
-  const fb = document.getElementById('feedback');
-  fb.textContent = '⏰ 時間到！';
-  fb.className = 'timeout';
-  document.querySelectorAll('.cbtn').forEach(b => {
-    if (b.dataset.correct === '1') b.classList.add('reveal');
+function handleTimeout(){
+  if(answered)return;
+  answered=true;stopTimer();
+  const fb=document.getElementById('feedback');
+  fb.textContent='⏰ 時間到！';fb.className='timeout';
+  document.getElementById('confirm-btn').style.display='none';
+  document.querySelectorAll('.cbtn').forEach(b=>{
+    if(targetColors.find(c=>c.en===b.dataset.en))b.classList.add('reveal');
   });
-  speak('Time is up! The answer is ' + queue[current].en, 0.8, 1.1, () => setTimeout(nextQuestion, 1000));
+  speak('Time is up!',0.8,1.1,()=>setTimeout(nextQ,1200));
 }
 
-function speakNow() {
-  const btn = document.getElementById('listen-btn');
-  btn.classList.remove('pulse');
-  void btn.offsetWidth;
-  btn.classList.add('pulse');
-  const word = queue[current].en;
-  document.getElementById('color-word').textContent = word.toUpperCase();
-  speak(word, 0.82, 1.15);
+function speakNow(){
+  const btn=document.getElementById('listen-btn');
+  btn.classList.remove('pulse');void btn.offsetWidth;btn.classList.add('pulse');
+  document.getElementById('color-word').textContent=targetColors.map(c=>c.en.toUpperCase()).join('  +  ');
+  speakColors(targetColors);
 }
 
-function buildChoices(target) {
-  const others = shuffle(COLORS.filter(c => c.en !== target.en)).slice(0, 1);
-  const opts = shuffle([target, ...others]);
-  const div = document.getElementById('choices');
-  div.innerHTML = '';
-  opts.forEach(c => {
-    const b = document.createElement('button');
-    b.className = 'cbtn';
-    b.dataset.correct = (c.en === target.en) ? '1' : '0';
-    b.style.background = c.hex;
-    if (c.border) b.style.outline = '2px solid #ccc';
-    b.innerHTML = `<span>${c.zh}</span>`;
-    b.onclick = () => handleAnswer(c.en === target.en, b);
+function buildChoices(targets,totalCount){
+  const others=shuffle(COLORS.filter(c=>!targets.find(t=>t.en===c.en))).slice(0,totalCount-targets.length);
+  const opts=shuffle([...targets,...others]);
+  const lv=LEVELS[currentLevel];
+  const div=document.getElementById('choices');
+  div.innerHTML='';
+  div.style.gridTemplateColumns='repeat(2,minmax(0,1fr))';
+  opts.forEach(c=>{
+    const b=document.createElement('button');
+    b.className='cbtn';b.dataset.en=c.en;
+    b.style.background=c.hex;
+    if(c.border)b.style.outline='2px solid #ccc';
+    b.innerHTML=`<span>${c.zh}</span>`;
+    if(lv.pick===1)b.onclick=()=>handleSingle(c.en===targets[0].en,b,targets[0]);
+    else b.onclick=()=>toggleSelect(b,c.en);
     div.appendChild(b);
   });
 }
 
-function handleAnswer(correct, btn) {
-  if (answered) return;
-  answered = true;
-  stopTimer();
-  const fb = document.getElementById('feedback');
-  if (correct) {
+function handleSingle(correct,btn,target){
+  if(answered)return;
+  answered=true;stopTimer();
+  const fb=document.getElementById('feedback');
+  if(correct){
     btn.classList.add('correct');
-    fb.textContent = '🎉 答對了！好棒！';
-    fb.className = 'good';
-    score++;
-    speak('Correct! Great job!', 0.88, 1.2, () => setTimeout(nextQuestion, 900));
+    fb.textContent='🎉 答對了！好棒！';fb.className='good';
+    levelScore++;totalScore++;
+    speak('Correct! Great job!',0.88,1.2,()=>setTimeout(nextQ,900));
   } else {
     btn.classList.add('wrong');
-    document.querySelectorAll('.cbtn').forEach(b => {
-      if (b.dataset.correct === '1') b.classList.add('reveal');
-    });
-    fb.textContent = '加油！下次一定可以！';
-    fb.className = 'bad';
-    speak('Try again next time!', 0.88, 1.1, () => setTimeout(nextQuestion, 1100));
+    document.querySelectorAll('.cbtn').forEach(b=>{if(b.dataset.en===target.en)b.classList.add('reveal');});
+    fb.textContent='加油！下次一定可以！';fb.className='bad';
+    speak('Try again!',0.88,1.1,()=>setTimeout(nextQ,1100));
   }
-  document.getElementById('score-disp').textContent = score + ' 分';
+  document.getElementById('score-disp').textContent=totalScore+' 分';
 }
 
-function nextQuestion() {
-  current++;
-  if (current >= queue.length) { showEnd(); return; }
+function toggleSelect(btn,en){
+  if(answered)return;
+  const lv=LEVELS[currentLevel];
+  if(btn.classList.contains('selected')){btn.classList.remove('selected');selectedBtns=selectedBtns.filter(b=>b!==btn);}
+  else{if(selectedBtns.length>=lv.pick)return;btn.classList.add('selected');selectedBtns.push(btn);}
+  document.getElementById('confirm-btn').style.display=selectedBtns.length===lv.pick?'block':'none';
+}
+
+function confirmMulti(){
+  if(answered)return;
+  answered=true;stopTimer();
+  document.getElementById('confirm-btn').style.display='none';
+  const selected=selectedBtns.map(b=>b.dataset.en);
+  const correct=targetColors.every(t=>selected.includes(t.en))&&selected.length===targetColors.length;
+  const fb=document.getElementById('feedback');
+  if(correct){
+    selectedBtns.forEach(b=>b.classList.add('correct'));
+    fb.textContent='🎉 全部答對！太厲害！';fb.className='good';
+    levelScore++;totalScore++;
+    speak('Excellent! All correct!',0.88,1.2,()=>setTimeout(nextQ,1000));
+  } else {
+    selectedBtns.forEach(b=>{b.classList.remove('selected');if(targetColors.find(t=>t.en===b.dataset.en))b.classList.add('correct');else b.classList.add('wrong');});
+    document.querySelectorAll('.cbtn').forEach(b=>{if(targetColors.find(t=>t.en===b.dataset.en)&&!b.classList.contains('correct'))b.classList.add('missed');});
+    fb.textContent='不對喔！看看正確答案！';fb.className='bad';
+    speak('Not quite!',0.85,1.1,()=>setTimeout(nextQ,1300));
+  }
+  document.getElementById('score-disp').textContent=totalScore+' 分';
+}
+
+function nextQ(){
+  qIndex++;
+  const lv=LEVELS[currentLevel];
+  if(qIndex>=lv.qs){showLevelResult();return;}
   loadQuestion();
 }
 
-function loadQuestion() {
-  answered = false;
-  document.getElementById('feedback').textContent = '';
-  document.getElementById('color-word').textContent = '';
-  document.getElementById('prog').textContent = (current + 1) + ' / ' + queue.length;
-  document.getElementById('listen-btn').innerHTML = '<span style="font-size:26px">🔊</span> 點我聽聲音！';
-  buildChoices(queue[current]);
-  document.getElementById('timer-bar').style.width = '100%';
-  setTimeout(() => { speakNow(); startTimer(); }, 350);
+function skipLevel(){
+  if(currentLevel>=LEVELS.length-1){showLevelResult();return;}
+  stopTimer();answered=true;selectedBtns=[];
+  document.getElementById('confirm-btn').style.display='none';
+  speechSynthesis.cancel();
+  showLevelResult();
 }
 
-function showEnd() {
-  document.getElementById('game-screen').style.display = 'none';
-  document.getElementById('end-screen').style.display = 'block';
-  const total = queue.length;
-  const icon = score === total ? '🌟' : score >= total * 0.75 ? '🎉' : score >= total * 0.5 ? '😊' : '💪';
-  const title = score === total ? '全部答對！超厲害！' : score >= total * 0.75 ? '做得很好！' : score >= total * 0.5 ? '不錯喔！繼續加油！' : '多練習就會更棒！';
-  document.getElementById('end-icon').textContent = icon;
-  document.getElementById('end-title').textContent = title;
-  document.getElementById('end-msg').textContent = total + ' 題裡答對了 ' + score + ' 題！';
-  speak('Excellent! You finished the game!', 0.88, 1.15);
+// ── Animal SVG builder ──
+function buildAnimalSVG(happy,animal){
+  const svg=document.getElementById('animal-svg');
+  const colors={
+    '🐶':{body:'#c8975a',ear:'#a87040',face:'#ddb070',nose:'#333'},
+    '🐱':{body:'#f0a868',ear:'#d08050',face:'#fac080',nose:'#e08090'},
+    '🐻':{body:'#8B6355',ear:'#6B4335',face:'#c09070',nose:'#333'},
+    '🦊':{body:'#e07030',ear:'#c05020',face:'#f8d0a0',nose:'#333'},
+    '🐸':{body:'#4a9a40',ear:'#3a7a30',face:'#70c060',nose:'#2a5a20'},
+    '🐼':{body:'#ddd',ear:'#333',face:'#fff',nose:'#333'},
+  };
+  const c=colors[animal]||colors['🐶'];
+
+  if(happy){
+    svg.innerHTML=`
+      <g class="bounce-body">
+        <ellipse cx="65" cy="85" rx="32" ry="28" fill="${c.body}"/>
+        <ellipse cx="65" cy="70" rx="26" ry="24" fill="${c.face}"/>
+        <ellipse cx="47" cy="52" rx="13" ry="15" fill="${c.ear}"/>
+        <ellipse cx="83" cy="52" rx="13" ry="15" fill="${c.ear}"/>
+        <ellipse cx="47" cy="53" rx="8" ry="10" fill="${c.face}"/>
+        <ellipse cx="83" cy="53" rx="8" ry="10" fill="${c.face}"/>
+        <ellipse cx="65" cy="77" rx="10" ry="7" fill="${c.nose}" opacity="0.3"/>
+        <ellipse cx="65" cy="75" rx="4" ry="3" fill="${c.nose}"/>
+        <path d="M58,82 Q65,90 72,82" stroke="${c.nose}" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        <circle cx="57" cy="66" r="4" fill="#333"/>
+        <circle cx="73" cy="66" r="4" fill="#333"/>
+        <circle cx="58.5" cy="64.5" r="1.5" fill="#fff"/>
+        <circle cx="74.5" cy="64.5" r="1.5" fill="#fff"/>
+      </g>
+      <g class="clap-hand" style="transform-origin:30px 100px">
+        <ellipse cx="28" cy="100" rx="10" ry="8" fill="${c.body}"/>
+      </g>
+      <g class="clap-hand" style="transform-origin:100px 100px;animation-direction:alternate-reverse">
+        <ellipse cx="102" cy="100" rx="10" ry="8" fill="${c.body}"/>
+      </g>
+      <circle cx="40" cy="48" r="3" fill="#FFD700" opacity="0.9"/>
+      <circle cx="90" cy="44" r="2.5" fill="#FFD700" opacity="0.9"/>
+      <circle cx="110" cy="60" r="2" fill="#FF69B4" opacity="0.9"/>
+      <circle cx="20" cy="65" r="2" fill="#7F77DD" opacity="0.9"/>
+    `;
+  } else {
+    svg.innerHTML=`
+      <ellipse cx="65" cy="85" rx="32" ry="28" fill="${c.body}"/>
+      <ellipse cx="65" cy="70" rx="26" ry="24" fill="${c.face}"/>
+      <ellipse cx="47" cy="52" rx="13" ry="15" fill="${c.ear}"/>
+      <ellipse cx="83" cy="52" rx="13" ry="15" fill="${c.ear}"/>
+      <ellipse cx="47" cy="53" rx="8" ry="10" fill="${c.face}"/>
+      <ellipse cx="83" cy="53" rx="8" ry="10" fill="${c.face}"/>
+      <ellipse cx="65" cy="77" rx="10" ry="7" fill="${c.nose}" opacity="0.3"/>
+      <ellipse cx="65" cy="75" rx="4" ry="3" fill="${c.nose}"/>
+      <path d="M58,88 Q65,82 72,88" stroke="${c.nose}" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      <path d="M54,63 Q57,59 60,63" stroke="#333" stroke-width="2" fill="none"/>
+      <path d="M70,63 Q73,59 76,63" stroke="#333" stroke-width="2" fill="none"/>
+      <circle cx="57" cy="65" r="3.5" fill="#333"/>
+      <circle cx="73" cy="65" r="3.5" fill="#333"/>
+      <ellipse cx="62" cy="82" rx="3" ry="4" fill="#6af" opacity="0.7" class="sad-tear"/>
+      <ellipse cx="68" cy="84" rx="3" ry="4" fill="#6af" opacity="0.7" class="sad-tear" style="animation-delay:0.5s"/>
+    `;
+  }
 }
 
-function startGame() {
-  queue = shuffle(COLORS).slice(0, 8);
-  current = 0; score = 0; answered = false;
-  document.getElementById('game-screen').style.display = 'block';
-  document.getElementById('end-screen').style.display = 'none';
-  document.getElementById('score-disp').textContent = '0 分';
+function showLevelResult(){
+  const lv=LEVELS[currentLevel];
+  const passed=levelScore>=3;
+  const animal=ANIMALS[currentLevel];
+  document.getElementById('app').style.display='none';
+  document.getElementById('result-screen').style.display='block';
+  buildAnimalSVG(passed,animal);
+  document.getElementById('result-msg').textContent=passed?'🎉 過關！':'😢 再加油！';
+
+  const scoreWord=['zero','one','two','three','four','five','six'][levelScore]||String(levelScore);
+  const totalWord=['zero','one','two','three','four','five','six'][lv.qs]||String(lv.qs);
+  document.getElementById('result-sub').textContent=`第 ${lv.lv} 關答對 ${levelScore} / ${lv.qs} 題`;
+
+  const nextBtn=document.getElementById('next-lv-btn');
+  if(currentLevel>=LEVELS.length-1){
+    nextBtn.textContent='查看成績 🏆';
+  } else {
+    nextBtn.textContent='下一關 ▶';
+  }
+
+  const msg=passed
+    ? `You got ${scoreWord} out of ${totalWord}! Great job!`
+    : `You got ${scoreWord} out of ${totalWord}. Keep trying!`;
+  speak(msg,0.82,passed?1.2:1.0);
+}
+
+function retryLevel(){
+  levelScores[currentLevel]=undefined;
+  levelScore=0;
+  totalScore=Math.max(0,totalScore);
+  qIndex=0;answered=false;selectedBtns=[];
+  document.getElementById('result-screen').style.display='none';
+  document.getElementById('app').style.display='block';
+  document.getElementById('feedback').textContent='';
+  loadQuestion();
+}
+
+function goNextLevel(){
+  levelScores[currentLevel]=levelScore;
+  if(currentLevel>=LEVELS.length-1){showFinal();return;}
+  currentLevel++;
+  levelScore=0;
+  qIndex=0;answered=false;selectedBtns=[];
+  document.getElementById('result-screen').style.display='none';
+  document.getElementById('app').style.display='block';
+  document.getElementById('feedback').textContent='';
+  speak('Level '+(currentLevel+1)+'! Let\'s go!',0.9,1.2,()=>setTimeout(loadQuestion,500));
+  document.getElementById('level-badge').textContent='第 '+(currentLevel+1)+' 關';
+  document.getElementById('skip-btn').style.display=currentLevel>=LEVELS.length-1?'none':'inline-block';
+  loadQuestion();
+}
+
+function loadQuestion(){
+  answered=false;selectedBtns=[];
+  document.getElementById('feedback').textContent='';
+  document.getElementById('color-word').textContent='';
+  document.getElementById('confirm-btn').style.display='none';
+  const lv=LEVELS[currentLevel];
+  document.getElementById('prog').textContent=(qIndex+1)+' / '+lv.qs+'　第 '+lv.lv+' 關';
+  document.getElementById('level-badge').textContent='第 '+lv.lv+' 關';
+  document.getElementById('skip-btn').style.display=currentLevel>=LEVELS.length-1?'none':'inline-block';
+  document.getElementById('listen-btn').innerHTML='<span style="font-size:24px">🔊</span> 點我聽聲音！';
+  targetColors=shuffle(COLORS).slice(0,lv.pick);
+  document.getElementById('hint').textContent=lv.pick>1?'請選出 '+lv.pick+' 個顏色！':'';
+  buildChoices(targetColors,lv.choices);
+  document.getElementById('timer-bar').style.width='100%';
+  setTimeout(()=>{speakNow();startTimer(lv.time);},350);
+}
+
+// ── Fireworks ──
+function showFinal(){
+  levelScores[currentLevel]=levelScore;
+  document.getElementById('result-screen').style.display='none';
+  document.getElementById('final-screen').style.display='block';
+  const tbody=document.getElementById('score-tbody');
+  tbody.innerHTML='';
+  let grandTotal=0,grandQ=0;
+  LEVELS.forEach((lv,i)=>{
+    const s=levelScores[i]||0;
+    grandTotal+=s;grandQ+=lv.qs;
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>第 ${lv.lv} 關 ${ANIMALS[i]}</td><td>${s}</td><td>${lv.qs}</td>`;
+    tbody.appendChild(tr);
+  });
+  const tr=document.createElement('tr');
+  tr.innerHTML=`<td>合計</td><td>${grandTotal}</td><td>${grandQ}</td>`;
+  tbody.appendChild(tr);
+  startFireworks();
+  speak('Congratulations! You finished all six levels!',0.85,1.15);
+}
+
+function startFireworks(){
+  const canvas=document.getElementById('fireworks-canvas');
+  const ctx=canvas.getContext('2d');
+  canvas.width=canvas.offsetWidth*2;canvas.height=440;
+  ctx.scale(2,1);
+  const W=canvas.offsetWidth/2,H=220;
+  const particles=[];
+  function explode(x,y){
+    const colors=['#FFD700','#FF69B4','#7F77DD','#1D9E75','#E24B4A','#EF9F27','#378ADD','#fff'];
+    for(let i=0;i<40;i++){
+      const angle=Math.random()*Math.PI*2;
+      const speed=Math.random()*4+1;
+      particles.push({x,y,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed,life:1,color:colors[Math.floor(Math.random()*colors.length)],r:Math.random()*3+1});
+    }
+  }
+  let t=0;
+  fwInterval=setInterval(()=>{
+    ctx.fillStyle='rgba(26,16,64,0.18)';
+    ctx.fillRect(0,0,W,H);
+    if(t%28===0)explode(Math.random()*W*0.8+W*0.1,Math.random()*H*0.6+20);
+    for(let i=particles.length-1;i>=0;i--){
+      const p=particles[i];
+      p.x+=p.vx;p.y+=p.vy;p.vy+=0.08;p.life-=0.022;
+      if(p.life<=0){particles.splice(i,1);continue;}
+      ctx.globalAlpha=p.life;
+      ctx.fillStyle=p.color;
+      ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill();
+    }
+    ctx.globalAlpha=1;t++;
+  },30);
+}
+
+function startGame(){
+  clearInterval(fwInterval);
+  currentLevel=0;qIndex=0;totalScore=0;levelScore=0;levelScores=[];
+  answered=false;selectedBtns=[];
+  document.getElementById('app').style.display='block';
+  document.getElementById('result-screen').style.display='none';
+  document.getElementById('final-screen').style.display='none';
+  document.getElementById('score-disp').textContent='0 分';
+  document.getElementById('skip-btn').style.display='inline-block';
   loadQuestion();
 }
 
 startGame();
 </script>
-</body>
-</html>
